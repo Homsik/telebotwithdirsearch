@@ -1,29 +1,38 @@
 import telebot
+import datetime
+import traceback
+from telebot import types
 import misc
-import func
 import os
 
-bot = telebot.TeleBot(misc.token)
-global dir_search
-dir_search = False
 
-@bot.message_handler(commands=['start'])
-def start_message(message):
-    bot.send_message(message.chat.id, 'Привет.')
+bot = telebot.TeleBot(misc.token)
+
 
 @bot.message_handler(content_types=['text'])
-def get_command(message):
-    if message.text.split()[0] == '/dir': #Исполнение команды
-        dir = message.text.split()[1]
-        dir_search = True #Режим проверки папок
-        dir_data = func.create_list(dir)
-        bot.send_message(message.chat.id, f'Найдено объектов: {dir_data[1]}.\nПуть: {dir_data[2]}/', reply_markup=dir_data[0])
-    if message.text == '[Выйти]' and dir_search: #Выключение
-        dir_search = False
-        bot.send_message(message.chat.id, 'Режим проверки директорий выключен.')
-    if message.text == '[Назад]' and dir_search: #Уровень вверх
-        dir = dir.split('//')[:-1]
-        print(dir)
+def message(message):
+    global path
+    keyboard = types.ReplyKeyboardRemove()
+
+    if message.text.split()[0] == '/dir':
+        if len(message.text.split()) > 2:
+            keyboard_width = message.text.split()[2]
+        else:
+            keyboard_width = misc.keyboard_width
+
+        path = message.text.split()[1]
+        files = os.listdir(path)
+        keyboard = types.InlineKeyboardMarkup()
+        if keyboard_width == 2:
+            for file in range(1, len(files)//2*2):
+                button1 = types.InlineKeyboardButton(text=files[file-1], callback_data=files[file-1])
+                button2 = types.InlineKeyboardButton(text=files[file], callback_data=files[file])
+                keyboard.add(button1, button2)
+            if len(files)//2 != 0:
+                keyboard.add(types.InlineKeyboardButton(text=files[-1], callback_data=files[-1]))
+        elif keyboard_width == 1:
+            for file in files: keyboard.add(types.InlineKeyboardButton(text=file, callback_data=file))
+        bot.send_message(message.chat.id, 'Найдено файлов: {}'.format(len(files)), reply_markup=keyboard)
 
 
 bot.polling()
