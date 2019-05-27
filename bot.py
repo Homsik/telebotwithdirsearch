@@ -7,6 +7,7 @@ import os
 
 
 bot = telebot.TeleBot(misc.token)
+global path
 
 
 @bot.message_handler(content_types=['text'])
@@ -23,16 +24,21 @@ def message(message):
         path = message.text.split()[1]
         files = os.listdir(path)
         keyboard = types.InlineKeyboardMarkup()
-        if keyboard_width == 2:
-            for file in range(1, len(files)//2*2):
-                button1 = types.InlineKeyboardButton(text=files[file-1], callback_data=files[file-1])
-                button2 = types.InlineKeyboardButton(text=files[file], callback_data=files[file])
+        if keyboard_width == '2':
+            for file in range(0, len(files)//2*2 - 1, 2):
+                button1 = types.InlineKeyboardButton(text=files[file], callback_data=files[file])
+                button2 = types.InlineKeyboardButton(text=files[file + 1], callback_data=files[file + 1])
                 keyboard.add(button1, button2)
-            if len(files)//2 != 0:
+            if len(files) / 2 - len(files) // 2 != 0:
                 keyboard.add(types.InlineKeyboardButton(text=files[-1], callback_data=files[-1]))
-        elif keyboard_width == 1:
+        elif keyboard_width == '1':
             for file in files: keyboard.add(types.InlineKeyboardButton(text=file, callback_data=file))
         bot.send_message(message.chat.id, 'Найдено файлов: {}'.format(len(files)), reply_markup=keyboard)
 
 
+@bot.callback_query_handler(func=lambda call: True)
+def query_handler(call):
+    global path
+    os.system(path + '\\' + call.data)
+    
 bot.polling()
